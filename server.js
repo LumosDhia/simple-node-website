@@ -32,7 +32,7 @@ app.get('*', (req, res) => {
 // Start server if executed directly
 if (require.main === module) {
   app.listen(PORT, () => {
-    console.log(`🚀 Server running on http://localhost:${PORT}`);
+    console.log(`Server running on http://localhost:${PORT}`);
   });
 }
 

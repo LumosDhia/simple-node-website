@@ -2,7 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 
-console.log('📦 Starting Build Process...');
+console.log('Starting Build Process...');
 
 const srcDir = path.join(__dirname, 'public');
 const distDir = path.join(__dirname, 'dist');
@@ -20,4 +20,4 @@ files.forEach(file => {
   console.log(`  Copied ${file} -> dist/`);
 });
 
-console.log('✅ Build Complete! Production assets ready in dist/');
+console.log('Build Complete! Production assets ready in dist/');
