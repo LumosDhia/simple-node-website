@@ -42,6 +42,7 @@ jobs:
   sca:
     name: SCA (npm audit)
     runs-on: ubuntu-latest
+    needs: secret-scan
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -58,6 +59,7 @@ jobs:
   sast-codeql:
     name: SAST (CodeQL JS)
     runs-on: ubuntu-latest
+    needs: sca
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -74,6 +76,7 @@ jobs:
   lint-and-test:
     name: Quality Gate (Lint & Test)
     runs-on: ubuntu-latest
+    needs: sast-codeql
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -96,7 +99,7 @@ jobs:
   build:
     name: Build Static Output & Upload Artifact
     runs-on: ubuntu-latest
-    needs: [secret-scan, sca, sast-codeql, lint-and-test]
+    needs: lint-and-test
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
