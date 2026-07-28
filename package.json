@@ -1,0 +1,26 @@
+{
+  "name": "simple-node-website",
+  "version": "1.0.0",
+  "description": "A modern Node.js website with GitHub Actions CI/CD pipeline",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "lint": "node lint.js",
+    "test": "node test.js",
+    "build": "node build.js"
+  },
+  "keywords": [
+    "nodejs",
+    "express",
+    "github-actions",
+    "cicd",
+    "website"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}

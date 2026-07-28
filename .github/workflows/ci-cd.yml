@@ -1,0 +1,129 @@
+name: GitHub Security & Delivery Pipeline
+
+# 1. Trigger — run on push / pull_request to main branch
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  # 2. Secret Scanning — Gitleaks, catch committed credentials
+  secret-scan:
+    name: 🔑 Secret Scanning (Gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Gitleaks Scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # 3. SCA — npm audit for vulnerable dependencies
+  sca:
+    name: 📦 SCA (npm audit)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run Dependency Audit
+        run: npm audit --audit-level=high || true
+
+  # 4. SAST — CodeQL, GitHub's static security analysis for JS
+  sast-codeql:
+    name: 🛡️ SAST (CodeQL JS)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+
+  # 5. Lint & test — your quality gate
+  lint-and-test:
+    name: 🧪 Quality Gate (Lint & Test)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Dependencies
+        run: npm ci || npm install
+
+      - name: Code Quality Linting
+        run: npm run lint
+
+      - name: Run Unit Tests
+        run: npm test
+
+  # 6. Build & Upload artifact — npm run build → static output packaged for Pages
+  build:
+    name: 📦 Build Static Output & Upload Artifact
+    runs-on: ubuntu-latest
+    needs: [secret-scan, sca, sast-codeql, lint-and-test]
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Compile Static Output
+        run: npm run build
+
+      - name: Upload Pages Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'dist'
+
+  # 7. Deploy — publish to GitHub Pages behind its environment
+  deploy:
+    name: 🚀 Deploy to GitHub Pages
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') && github.event_name != 'pull_request'
+    steps:
+      - name: Deploy to GitHub Pages Environment
+        id: deployment
+        uses: actions/deploy-pages@v4
